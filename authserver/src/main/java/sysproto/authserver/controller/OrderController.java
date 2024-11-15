@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sysproto.authserver.annotation.PermissionInterceptor;
+import sysproto.authserver.context.UserContext;
 
 @RestController
 @RequestMapping("/public")
@@ -12,7 +13,8 @@ public class OrderController {
     @PermissionInterceptor(value = {"order"})
     @GetMapping("/authorized-order")
     public String getAuthorizedOrder() {
-        return "get authorized order";
+        UserContext userContext = UserContext.getCurrentUser();
+        return "get authorized order by " + userContext.getUsername();
     }
 
     @GetMapping("/normal-order")

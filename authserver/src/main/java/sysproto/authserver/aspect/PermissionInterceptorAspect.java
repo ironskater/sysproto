@@ -16,6 +16,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import sysproto.authserver.annotation.PermissionInterceptor;
+import sysproto.authserver.context.UserContext;
 import sysproto.authserver.utils.JwtUtil;
 
 @Aspect
@@ -32,27 +33,31 @@ public class PermissionInterceptorAspect {
     public Object checkPermission(
         ProceedingJoinPoint joinPoint, PermissionInterceptor permissionInterceptor) throws Throwable {
 
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
-            .currentRequestAttributes()).getRequest();
+        try {
 
-        // 從 Cookie 獲取 JWT
-        String token = extractTokenFromCookie(request);
-        if (token == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No session found");
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
+                .currentRequestAttributes()).getRequest();
+
+            // 從 Cookie 獲取 JWT
+            String token = extractTokenFromCookie(request);
+            if (token == null) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No session found");
+            }
+
+            // 驗證 JWT 並取得權限
+            Claims claims = validateToken(token);
+            UserContext.setCurrentUser(UserContext.fromClaims(claims));
+
+            // 檢查是否有所需權限
+            String[] requiredPermissions = permissionInterceptor.value();
+            if (!hasRequiredPermissions(UserContext.getCurrentUser().getPermissions(), requiredPermissions)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
+            }
+
+            return joinPoint.proceed();
+        } finally {
+            UserContext.clear();
         }
-
-        // 驗證 JWT 並取得權限
-        Claims claims = validateToken(token);
-        @SuppressWarnings("unchecked")
-        List<String> userPermissions = claims.get("permissions", List.class);
-
-        // 檢查是否有所需權限
-        String[] requiredPermissions = permissionInterceptor.value();
-        if (!hasRequiredPermissions(userPermissions, requiredPermissions)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Insufficient permissions");
-        }
-
-        return joinPoint.proceed();
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {
