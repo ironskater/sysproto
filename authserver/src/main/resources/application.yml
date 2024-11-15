@@ -3,3 +3,7 @@ spring:
         user:
             name: admin
             password: admin
+jwt:
+    secret: sysproto
+    cookie:
+        name: sysproto_token

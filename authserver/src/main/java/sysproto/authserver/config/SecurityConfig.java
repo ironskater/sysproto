@@ -57,7 +57,10 @@ public class SecurityConfig {
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/logout").permitAll()  // 允許所有人訪問登入和登出端點
+                .requestMatchers("/loginJwt",
+                    "/loginSession",
+                    "/logout",
+                    "/public/**").permitAll()  // 允許所有人訪問登入和登出端點
                 .anyRequest().authenticated()  // 其他所有請求都需要認證
             )
             .logout(logout -> logout.disable());

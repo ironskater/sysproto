@@ -10,4 +10,6 @@ public class LoginRsp {
     private final String message;
 
     private final String token;
+
+    private final String sessionId;
 }
